@@ -79,24 +79,40 @@ func (s *server) subscribe(ctx context.Context, w http.ResponseWriter, r *http.R
 	}
 }
 
+func (cs *server) publishMsg(msg []byte) {
+	cs.subscribersMu.Lock()
+	defer cs.subscribersMu.Unlock()
+
+	for subscriber := range cs.subscribers {
+		subscriber.msgs <- msg
+	}
+}
+
 func main() {
 	fmt.Println("Starting the application chat...")
+	srv := newServer()
 
-	go func() {
+	go func(s *server) {
 		for {
 			system, err := hardware.GetSystemSection()
 			if err != nil {
 				fmt.Println(err)
 			}
 
-			fmt.Println(system)
-			time.Sleep(2 * time.Second)
+			timeStamp := time.Now().Format("2006-01-02 15:04:05")
+			msg := []byte(`
+			<div hx-swap-oob="innerHTML:#update-timestamp">
+				<p><i style="color: green" class="fa fa-circle"></i> ` + timeStamp + `</p>
+			</div>
+			<div hx-swap-oob="innerHTML:#system-data">` + system + `</div>
+			<div hx-swap-oob="innerHTML:#cpu-data">Test</div>
+			<div hx-swap-oob="innerHTML:#disk-data">diskData</div>`)
+			srv.publishMsg(msg)
+			time.Sleep(1 * time.Second)
 		}
-	}()
+	}(srv)
 
-	srv := newServer()
 	err := http.ListenAndServe(":8080", &srv.mux)
-
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
