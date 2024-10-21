@@ -4,6 +4,7 @@ go 1.22.3
 
 require (
 	github.com/coder/websocket v1.8.12
+	github.com/gorilla/websocket v1.5.3
 	github.com/shirou/gopsutil/v4 v4.24.9
 )
 
